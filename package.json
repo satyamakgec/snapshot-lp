@@ -20,7 +20,11 @@
   },
   "homepage": "https://github.com/satyamakgec/snapshot-lp#readme",
   "dependencies": {
+    "@uniswap/sdk": "^3.0.3",
+    "bignumber.js": "^9.0.1",
+    "csv-parse": "^4.14.1",
     "dotenv": "^8.2.0",
+    "ethers": "^5.0.21",
     "lodash": "^4.17.20",
     "objects-to-csv": "^1.3.6",
     "unix-timestamp": "^0.2.0",
