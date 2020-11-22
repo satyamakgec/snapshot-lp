@@ -59,7 +59,7 @@ async function readInvestors(pairInstance, eventType) {
     
     // Read all the Transfer event and Mint event to know the token holders.
     let events = await pairInstance.getPastEvents(eventType, {
-        fromBlock: process.env.FROM_BLOCK,
+        fromBlock: 0,
         toBlock: 'latest'
     });
     if (events.length > 0 ) {
