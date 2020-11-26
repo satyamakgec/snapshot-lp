@@ -4,6 +4,7 @@ const ObjectToCsv = require("objects-to-csv");
 const timestamp = require('unix-timestamp');
 const csvParse = require('csv-parse/lib/sync');
 const fs = require("fs");
+const path = require('path');
 
 const SECONDS_IN_A_DAY = 86400;
 const ABI_PATH = "./artifacts/UniswapV2Pair.json";
@@ -23,11 +24,11 @@ try {
     process.exit(1); // Forcefully exit.
 }
 
-async function validateSnapshot(path, pairAddress) {
+async function validateSnapshot(pathOfDataFile, pairAddress) {
     let inputContent;
     try {
-        if (fs.existsSync(path)) {
-            inputContent = fs.readFileSync(path, "utf8");
+        if (fs.existsSync(pathOfDataFile)) {
+            inputContent = fs.readFileSync(pathOfDataFile, "utf8");
         }
     } catch(e) {
         console.log(`Error in reading the ABI of contract: ${e.error}`);
@@ -46,18 +47,17 @@ async function validateSnapshot(path, pairAddress) {
         console.log("Reward period is still left");
         process.exit(1);
     } else {
-        let promises = [];
         for(let i = 0; i < data.length; i++) {
-            if (await isHolderStillValid(pairInstance, "Transfer", data[i].blockNumber, data[i].holder, data[i].amount)) {
+            if (await isHolderStillValid(pairInstance, "Transfer", data[i].blockNumber, data[i].liquidityProvider, data[i].liquidityTokens)) {
                 validHolders.push({
-                    "holder": data[i].holder,
-                    "balance": data[i].amount,
+                    "liquidityProvider": data[i].liquidityProvider,
+                    "liquidityTokens": data[i].liquidityTokens,
                 });
             }
         }
     }
     let csv = new ObjectToCsv(validHolders);
-    await csv.toDisk(path);
+    await csv.toDisk(`./dataset/valid_${path.basename(pathOfDataFile)}`);
     process.exit(0);
 }
 
@@ -91,4 +91,4 @@ async function isHolderStillValid(pairInstance, eventType, fromBlock, holder, sn
     return true;
 }
 
-validateSnapshot("./dataset/test.csv", process.env.PAIR_ETH);
+validateSnapshot("./dataset/0x1964cf3d1d95965eeceaee11debed99223524f48_1606412075.csv", process.env.PAIR_ETH);

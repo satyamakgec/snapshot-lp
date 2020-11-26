@@ -36,18 +36,35 @@ async function emulateSnapshot(pairAddress) {
     let filteredHolders = new Array();
     let counter = 0;
     console.log(`No. of unique token investor in ${pairAddress}: ${tokenHolders.length}`);
+    let promises = [];
+    let interimData = [];
     tokenHolders.forEach(async (holder) => {
-        let value = parseInt(await getLPTokenValue(holder, pairInstance, valueInUSD));
-        if (value >= process.env.MINIMUM_DOLLAR_HOLDING) {
-            console.log(value);
-            filteredHolders.push({
-                "liquidityProvider": holder,
-                "liquidityTokens": await balanceOfInvestor(holder, pairInstance)
-            });
-            console.log(`${holder},${await balanceOfInvestor(holder, pairInstance)},${parseInt(timestamp.now())}, ${await web3.eth.getBlockNumber()}`);
-        }
+        promises.push(getLPTokenValue(holder, pairInstance, valueInUSD));
+    });
+    Promise.all(promises).then(async (data) => {
+        let currentBlockNumber = await web3.eth.getBlockNumber();
+        data.forEach(data => {
+            if (parseInt(data.value) >= process.env.MINIMUM_DOLLAR_HOLDING) {
+                filteredHolders.push({
+                    "liquidityProvider": data.holder,
+                    "liquidityTokens": data.amount,
+                    "timestamp": parseInt(timestamp.now()),
+                    "blockNumber" : currentBlockNumber
+                });
+            }
+        });
+        let path = `./dataset/${pairAddress}_${parseInt(timestamp.now())}.csv`;
+        let csv = new ObjectToCsv(filteredHolders);
+        await csv.toDisk(path);
+        console.log(`Data is successfully return at ${path}.`);
+        process.exit(0);
+    }).catch(function(error) {
+        console.log(error.message);
+        console.log("Problem in iterating the promises");
+        process.exit(1);
     });
 }
+
 
 async function createSnapshot(pairAddress) {
     await emulateSnapshot(pairAddress);
@@ -85,18 +102,29 @@ async function totalSupply(pairInstance) {
 }
 
 async function getLPTokenValue(target, pairInstance, totalPoolValue) {
-    let currentHolding = await balanceOfInvestor(target, pairInstance);
-    let _totalSupply = await totalSupply(pairInstance);
-    if (currentHolding.toString() != "0") {
-        let percentageOwnership =
-            ((
-                (new BigNumber(currentHolding.toString()))
-                .div(new BigNumber(_totalSupply.toString())))
-                .times(new BigNumber("100")));
-        return parseFloat((percentageOwnership.times(new BigNumber(totalPoolValue))).div(new BigNumber("100")));
-    } else {
-        return 0;
-    }
+    return new Promise(async (resolve, reject) => {
+        let currentHolding = await balanceOfInvestor(target, pairInstance);
+        let _totalSupply = await totalSupply(pairInstance);
+        if (currentHolding.toString() != "0") {
+            let percentageOwnership =
+                ((
+                    (new BigNumber(currentHolding.toString()))
+                    .div(new BigNumber(_totalSupply.toString())))
+                    .times(new BigNumber("100")));
+            let resolveData = {
+                "holder": target,
+                "value": parseFloat((percentageOwnership.times(new BigNumber(totalPoolValue))).div(new BigNumber("100"))),
+                "amount": currentHolding
+            };
+            return resolve(resolveData);
+        } else {
+            return resolve({
+                "holder": target,
+                "value": 0,
+                "amount": currentHolding
+            });
+        }
+    });
 }
 
 async function calculateTotalLiquidationValue(pairInstance) {

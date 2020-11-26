@@ -4,7 +4,8 @@
   "description": "Create snapshot of the UniswapV2 token holders to airdrop tokens.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "snapshot": "node createSnapshot.js",
+    "validate": "node validateSnapshot.js"
   },
   "repository": {
     "type": "git",
