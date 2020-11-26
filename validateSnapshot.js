@@ -64,7 +64,7 @@ async function validateSnapshot(path, pairAddress) {
 async function isHolderStillValid(pairInstance, eventType, fromBlock, holder, snappedHolding) {
     let currentHolding = await pairInstance.methods.balanceOf(holder).call();
     if (currentHolding < snappedHolding) {
-        return (false);
+        return false;
     }
     // Read all the Transfer event and Mint event to know the token holders.
     let events = await pairInstance.getPastEvents(eventType, {
@@ -86,9 +86,9 @@ async function isHolderStillValid(pairInstance, eventType, fromBlock, holder, sn
                 }
             }
         }
-        return (valid);
+        return valid;
     }
-    return (true);
+    return true;
 }
 
 validateSnapshot("./dataset/test.csv", process.env.PAIR_ETH);
