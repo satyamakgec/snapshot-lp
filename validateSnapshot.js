@@ -3,6 +3,7 @@ const Web3 = require("web3");
 const ObjectToCsv = require("objects-to-csv");
 const timestamp = require('unix-timestamp');
 const csvParse = require('csv-parse/lib/sync');
+const BigNumber = require('bignumber.js');
 const fs = require("fs");
 const path = require('path');
 
@@ -49,15 +50,18 @@ async function validateSnapshot(pathOfDataFile, pairAddress) {
     } else {
         for(let i = 0; i < data.length; i++) {
             if (await isHolderStillValid(pairInstance, "Transfer", data[i].blockNumber, data[i].liquidityProvider, data[i].liquidityTokens)) {
+                let percentage = ((new BigNumber(data[i].liquidityTokens).div(new BigNumber(data[i].totalSupply))).times(new BigNumber(100)).dp(2)).toString();
                 validHolders.push({
                     "liquidityProvider": data[i].liquidityProvider,
                     "liquidityTokens": data[i].liquidityTokens,
+                    "liquidityPercentage": percentage
                 });
             }
         }
     }
     let csv = new ObjectToCsv(validHolders);
     await csv.toDisk(`./dataset/valid_${path.basename(pathOfDataFile)}`);
+    console.log(`Valid data is successfully return at ${`./dataset/valid_${path.basename(pathOfDataFile)}`}.`);
     process.exit(0);
 }
 
@@ -91,4 +95,4 @@ async function isHolderStillValid(pairInstance, eventType, fromBlock, holder, sn
     return true;
 }
 
-validateSnapshot("./dataset/0x1964cf3d1d95965eeceaee11debed99223524f48_1606412075.csv", process.env.PAIR_ETH);
+validateSnapshot("./dataset/0x1964cf3d1d95965eeceaee11debed99223524f48_1606627804.csv", process.env.PAIR_ETH);

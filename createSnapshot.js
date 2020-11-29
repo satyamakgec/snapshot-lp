@@ -35,7 +35,6 @@ async function emulateSnapshot(pairAddress) {
     let valueInUSD = await calculateTotalLiquidationValue(pairInstance);
     let filteredHolders = new Array();
     let counter = 0;
-    console.log(`No. of unique token investor in ${pairAddress}: ${tokenHolders.length}`);
     let promises = [];
     let interimData = [];
     tokenHolders.forEach(async (holder) => {
@@ -43,13 +42,15 @@ async function emulateSnapshot(pairAddress) {
     });
     Promise.all(promises).then(async (data) => {
         let currentBlockNumber = await web3.eth.getBlockNumber();
+        let supply = await pairInstance.methods.totalSupply().call();
         data.forEach(data => {
             if (parseInt(data.value) >= process.env.MINIMUM_DOLLAR_HOLDING) {
                 filteredHolders.push({
                     "liquidityProvider": data.holder,
                     "liquidityTokens": data.amount,
                     "timestamp": parseInt(timestamp.now()),
-                    "blockNumber" : currentBlockNumber
+                    "blockNumber" : currentBlockNumber,
+                    "totalSupply": supply
                 });
             }
         });
